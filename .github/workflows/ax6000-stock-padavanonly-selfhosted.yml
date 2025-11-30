@@ -12,8 +12,6 @@
 
 name: Redmi-AX6000-stock-padavanonly
 
-runs-on: self-hosted
-
 on:
   repository_dispatch:
   workflow_dispatch:
