@@ -30,7 +30,6 @@ ENV REPO_URL=https://github.com/padavanonly/immortalwrt-mt798x-6.6/ \
 
 WORKDIR /workspace
 COPY docker/ax6000-stock-padavanonly/entrypoint.sh /workspace/docker/ax6000-stock-padavanonly/entrypoint.sh
-COPY feeds.conf.default /workspace/feeds.conf.default
 COPY immortalwrtARM/ /workspace/immortalwrtARM/
 
 RUN chmod +x /workspace/docker/ax6000-stock-padavanonly/entrypoint.sh \

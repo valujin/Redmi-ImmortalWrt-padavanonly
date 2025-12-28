@@ -117,8 +117,12 @@ if ! make -j"$(nproc)"; then
   fi
 fi
 
-# .config lines look like: CONFIG_TARGET_mediatek_filogic_DEVICE_redmi_ax6000=y
-DEVICE_NAME="$(grep -E '^CONFIG_TARGET_.*_DEVICE_.*=y$' .config | sed -E 's/^CONFIG_TARGET_.*_DEVICE_([^=]+)=y$/\1/' | tr -d '\n' || true)"
+DEVICE_LINE="$(grep -E '^CONFIG_TARGET_.*_DEVICE_.*=y$' .config | head -n1 || true)"
+DEVICE_NAME=""
+if [ -n "${DEVICE_LINE}" ]; then
+  # .config lines look like: CONFIG_TARGET_mediatek_filogic_DEVICE_redmi_ax6000=y
+  DEVICE_NAME="$(echo "${DEVICE_LINE}" | sed -E 's/^CONFIG_TARGET_.*_DEVICE_([^=]+)=y$/\1/' | tr -d '\n')"
+fi
 FILE_DATE="$(date +"%Y%m%d%H%M")"
 
 mkdir -p "${OUTPUT_DIR}/bin"
@@ -130,8 +134,10 @@ fi
 target_dir="$(find bin/targets -mindepth 2 -maxdepth 2 -type d -print -quit 2>/dev/null || true)"
 if [ -n "${target_dir}" ]; then
   firmware_name="${FIRMWARE_PREFIX}"
-  [ -n "${DEVICE_NAME}" ] && firmware_name+="_${DEVICE_NAME}"
-  firmware_name+="_${FILE_DATE}"
+  if [ -n "${DEVICE_NAME}" ]; then
+    firmware_name="${firmware_name}_${DEVICE_NAME}"
+  fi
+  firmware_name="${firmware_name}_${FILE_DATE}"
   dest="${OUTPUT_DIR}/firmware/${firmware_name}"
   echo ">> Copying firmware from ${target_dir} to ${dest}"
   mkdir -p "${dest}"
