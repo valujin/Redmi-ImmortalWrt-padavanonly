@@ -46,4 +46,17 @@ git clone https://github.com/x-wrt/x-wrt
 ## Redmi AX6000 不死ubootmod
 - HZFrodo-[HZFrodo/uboot-mediatek: add support for Xiaomi Redmi Router AX6000](https://github.com/openwrt/openwrt/commit/1613e3340b829ea9aa6da954bf0ff98214b71751).
 
+## 使用 Docker 复用 GitHub Actions 流水线
+`.github/workflows/ax6000-stock-padavanonly.yml` 中的构建步骤已封装为 `docker/ax6000-stock-padavanonly/Dockerfile`，可在本地复用相同的编译环境：
+
+```bash
+# 构建镜像
+docker build -f docker/ax6000-stock-padavanonly/Dockerfile -t ax6000-padavanonly .
+
+# 运行编译（输出会放到挂载的 output 目录）
+docker run --rm -it -v $(pwd)/output:/output ax6000-padavanonly
+```
+
+需要调整源码仓库、分支或配置文件时，可在 `docker run` 时覆盖 `REPO_URL`、`REPO_BRANCH`、`CONFIG_FILE` 等环境变量。
+
 
