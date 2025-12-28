@@ -36,7 +36,7 @@ if [ -e "${WORKSPACE}/${FEEDS_CONF}" ]; then
   cp "${WORKSPACE}/${FEEDS_CONF}" feeds.conf.default
 fi
 
-if [ -e "${WORKSPACE}/${DIY_P1_SH}" ]; then
+if [ -f "${WORKSPACE}/${DIY_P1_SH}" ]; then
   echo ">> Running pre-feed customization ${DIY_P1_SH}"
   chmod +x "${WORKSPACE}/${DIY_P1_SH}"
   "${WORKSPACE}/${DIY_P1_SH}"
@@ -51,7 +51,7 @@ if [ -e "${WORKSPACE}/${CONFIG_FILE}" ]; then
   cp "${WORKSPACE}/${CONFIG_FILE}" .config
 fi
 
-if [ -e "${WORKSPACE}/${DIY_P2_SH}" ]; then
+if [ -f "${WORKSPACE}/${DIY_P2_SH}" ]; then
   echo ">> Running post-feed customization ${DIY_P2_SH}"
   chmod +x "${WORKSPACE}/${DIY_P2_SH}"
   "${WORKSPACE}/${DIY_P2_SH}"
@@ -85,7 +85,7 @@ if [ -n "${target_dir}" ]; then
   dest="${OUTPUT_DIR}/firmware/${firmware_name}"
   echo ">> Copying firmware from ${target_dir} to ${dest}"
   mkdir -p "${dest}"
-  rsync -a --delete --exclude packages "${target_dir}/" "${dest}/"
+  rsync -a --exclude packages "${target_dir}/" "${dest}/"
 fi
 
 echo ">> Build completed. Artifacts are available under ${OUTPUT_DIR}"
