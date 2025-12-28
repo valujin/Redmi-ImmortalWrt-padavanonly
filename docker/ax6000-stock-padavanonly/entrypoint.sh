@@ -70,8 +70,7 @@ find dl -size -1024c -exec rm -f {} \;
 echo ">> Building firmware"
 make -j"$(nproc)" || make -j1 || make -j1 V=s
 
-DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' || true)"
-DEVICE_NAME="${DEVICE_NAME//$'\n'/}"
+DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -E 's/.*DEVICE_(.*)=y/\1/' | tr -d '\n' || true)"
 FILE_DATE="$(date +"%Y%m%d%H%M")"
 
 mkdir -p "${OUTPUT_DIR}/bin"
