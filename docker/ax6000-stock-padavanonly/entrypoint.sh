@@ -12,10 +12,18 @@ WORKSPACE="${WORKSPACE:-/workspace}"
 WORKDIR="${WORKDIR:-/workdir}"
 OUTPUT_DIR="${OUTPUT_DIR:-/output}"
 
-if [[ "${TZ}" == *".."* ]] || ! [[ "${TZ}" =~ ^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)+$ ]]; then
-  echo ">> Invalid TZ value: ${TZ}" >&2
-  exit 1
-fi
+validate_timezone() {
+  local tz_value="$1"
+  local resolved
+  resolved="$(realpath -m "/usr/share/zoneinfo/${tz_value}" 2>/dev/null || true)"
+
+  if [ -z "${resolved}" ] || [[ "${resolved}" != /usr/share/zoneinfo/* ]] || [ ! -e "${resolved}" ]; then
+    echo ">> Invalid TZ value: ${tz_value}" >&2
+    exit 1
+  fi
+
+  echo "${resolved}"
+}
 
 resolve_workspace_path() {
   local relative_path="$1"
@@ -38,8 +46,9 @@ resolve_workspace_path() {
   esac
 }
 
+ZONEINFO_PATH="$(validate_timezone "${TZ}")"
 echo ">> Using timezone ${TZ}"
-ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime
+ln -snf "${ZONEINFO_PATH}" /etc/localtime
 echo "${TZ}" >/etc/timezone
 
 mkdir -p "${WORKDIR}" "${OUTPUT_DIR}"
@@ -96,9 +105,15 @@ make download -j"$(nproc)"
 find dl -size -1024c -delete
 
 echo ">> Building firmware"
-make -j"$(nproc)" || make -j1 || make -j1 V=s
+if ! make -j"$(nproc)"; then
+  echo ">> Parallel build failed, retrying single-thread"
+  if ! make -j1; then
+    echo ">> Single-thread build failed, retrying verbose"
+    make -j1 V=s
+  fi
+fi
 
-DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/^CONFIG_TARGET.*DEVICE_(.*)=y$/\1/' | tr -d '\n' || true)"
+DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -E 's/^CONFIG_TARGET.*DEVICE_(.*)=y$/\1/' | tr -d '\n' || true)"
 FILE_DATE="$(date +"%Y%m%d%H%M")"
 
 mkdir -p "${OUTPUT_DIR}/bin"
