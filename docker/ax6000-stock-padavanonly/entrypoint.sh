@@ -12,6 +12,32 @@ WORKSPACE="${WORKSPACE:-/workspace}"
 WORKDIR="${WORKDIR:-/workdir}"
 OUTPUT_DIR="${OUTPUT_DIR:-/output}"
 
+if [[ "${TZ}" == *".."* ]] || ! [[ "${TZ}" =~ ^[A-Za-z0-9_+.-]+(/[A-Za-z0-9_+.-]+)*$ ]]; then
+  echo ">> Invalid TZ value: ${TZ}" >&2
+  exit 1
+fi
+
+resolve_workspace_path() {
+  local relative_path="$1"
+  local candidate="${WORKSPACE}/${relative_path}"
+
+  if [ ! -e "${candidate}" ]; then
+    return 1
+  fi
+
+  local resolved
+  resolved="$(readlink -f "${candidate}")"
+  case "${resolved}" in
+    "${WORKSPACE}/"*)
+      echo "${resolved}"
+      ;;
+    *)
+      echo ">> Refusing to use path outside workspace: ${relative_path}" >&2
+      return 1
+      ;;
+  esac
+}
+
 echo ">> Using timezone ${TZ}"
 ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime
 echo "${TZ}" >/etc/timezone
@@ -36,10 +62,11 @@ if [ -e "${WORKSPACE}/${FEEDS_CONF}" ]; then
   cp "${WORKSPACE}/${FEEDS_CONF}" feeds.conf.default
 fi
 
-if [ -f "${WORKSPACE}/${DIY_P1_SH}" ]; then
+p1_path="$(resolve_workspace_path "${DIY_P1_SH}" || true)"
+if [ -n "${p1_path}" ]; then
   echo ">> Running pre-feed customization ${DIY_P1_SH}"
-  chmod +x "${WORKSPACE}/${DIY_P1_SH}"
-  "${WORKSPACE}/${DIY_P1_SH}"
+  chmod +x "${p1_path}"
+  "${p1_path}"
 fi
 
 echo ">> Updating and installing feeds"
@@ -51,10 +78,11 @@ if [ -e "${WORKSPACE}/${CONFIG_FILE}" ]; then
   cp "${WORKSPACE}/${CONFIG_FILE}" .config
 fi
 
-if [ -f "${WORKSPACE}/${DIY_P2_SH}" ]; then
+p2_path="$(resolve_workspace_path "${DIY_P2_SH}" || true)"
+if [ -n "${p2_path}" ]; then
   echo ">> Running post-feed customization ${DIY_P2_SH}"
-  chmod +x "${WORKSPACE}/${DIY_P2_SH}"
-  "${WORKSPACE}/${DIY_P2_SH}"
+  chmod +x "${p2_path}"
+  "${p2_path}"
 fi
 
 if [ -f defconfig/mt7986-ax6000.config ]; then
@@ -70,7 +98,7 @@ find dl -size -1024c -exec rm -f {} \;
 echo ">> Building firmware"
 make -j"$(nproc)" || make -j1 || make -j1 V=s
 
-DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -E 's/.*DEVICE_(.*)=y/\1/' | tr -d '\n' || true)"
+DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' | tr -d '\n' || true)"
 FILE_DATE="$(date +"%Y%m%d%H%M")"
 
 mkdir -p "${OUTPUT_DIR}/bin"
