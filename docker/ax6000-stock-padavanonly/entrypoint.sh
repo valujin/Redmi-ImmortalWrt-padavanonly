@@ -11,6 +11,7 @@ TZ="${TZ:-Asia/Shanghai}"
 WORKSPACE="${WORKSPACE:-/workspace}"
 WORKDIR="${WORKDIR:-/workdir}"
 OUTPUT_DIR="${OUTPUT_DIR:-/output}"
+FIRMWARE_PREFIX="${FIRMWARE_PREFIX:-ImmortalWrt_padavanonly}"
 
 validate_timezone() {
   local tz_value="$1"
@@ -109,11 +110,15 @@ if ! make -j"$(nproc)"; then
   echo ">> Parallel build failed, retrying single-thread"
   if ! make -j1; then
     echo ">> Single-thread build failed, retrying verbose"
-    make -j1 V=s
+    make -j1 V=s || {
+      echo ">> Verbose single-thread build failed"
+      exit 1
+    }
   fi
 fi
 
-DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -E 's/^CONFIG_TARGET.*DEVICE_(.*)=y$/\1/' | tr -d '\n' || true)"
+# .config lines look like: CONFIG_TARGET_mediatek_filogic_DEVICE_redmi_ax6000=y
+DEVICE_NAME="$(grep -E '^CONFIG_TARGET_.*_DEVICE_.*=y$' .config | sed -E 's/^CONFIG_TARGET_.*_DEVICE_([^=]+)=y$/\1/' | tr -d '\n' || true)"
 FILE_DATE="$(date +"%Y%m%d%H%M")"
 
 mkdir -p "${OUTPUT_DIR}/bin"
@@ -122,9 +127,11 @@ if [ -d bin ]; then
   cp -r bin "${OUTPUT_DIR}/"
 fi
 
-target_dir="$(find bin/targets -mindepth 2 -maxdepth 2 -type d | head -n 1 || true)"
+target_dir="$(find bin/targets -mindepth 2 -maxdepth 2 -type d -print -quit 2>/dev/null || true)"
 if [ -n "${target_dir}" ]; then
-  firmware_name="ImmortalWrt_padavanonly${DEVICE_NAME:+_${DEVICE_NAME}}_${FILE_DATE}"
+  firmware_name="${FIRMWARE_PREFIX}"
+  [ -n "${DEVICE_NAME}" ] && firmware_name+="_${DEVICE_NAME}"
+  firmware_name+="_${FILE_DATE}"
   dest="${OUTPUT_DIR}/firmware/${firmware_name}"
   echo ">> Copying firmware from ${target_dir} to ${dest}"
   mkdir -p "${dest}"
