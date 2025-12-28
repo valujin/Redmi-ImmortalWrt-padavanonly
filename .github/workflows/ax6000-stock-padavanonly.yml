@@ -82,6 +82,7 @@ jobs:
       id: package
       run: |
         cd openwrt
+        cp -f defconfig/mt7986-ax6000.config .config
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
