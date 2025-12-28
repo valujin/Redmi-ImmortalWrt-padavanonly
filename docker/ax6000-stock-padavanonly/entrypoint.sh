@@ -12,7 +12,7 @@ WORKSPACE="${WORKSPACE:-/workspace}"
 WORKDIR="${WORKDIR:-/workdir}"
 OUTPUT_DIR="${OUTPUT_DIR:-/output}"
 
-if [[ "${TZ}" == *".."* ]] || ! [[ "${TZ}" =~ ^[A-Za-z0-9_+.-]+(/[A-Za-z0-9_+.-]+)*$ ]]; then
+if [[ "${TZ}" == *".."* ]] || ! [[ "${TZ}" =~ ^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)+$ ]]; then
   echo ">> Invalid TZ value: ${TZ}" >&2
   exit 1
 fi
@@ -93,12 +93,12 @@ fi
 echo ">> Generating defconfig and downloading sources"
 make defconfig
 make download -j"$(nproc)"
-find dl -size -1024c -exec rm -f {} \;
+find dl -size -1024c -delete
 
 echo ">> Building firmware"
 make -j"$(nproc)" || make -j1 || make -j1 V=s
 
-DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' | tr -d '\n' || true)"
+DEVICE_NAME="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/^CONFIG_TARGET.*DEVICE_(.*)=y$/\1/' | tr -d '\n' || true)"
 FILE_DATE="$(date +"%Y%m%d%H%M")"
 
 mkdir -p "${OUTPUT_DIR}/bin"
