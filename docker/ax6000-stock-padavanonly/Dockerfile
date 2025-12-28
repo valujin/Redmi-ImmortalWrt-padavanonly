@@ -33,8 +33,8 @@ COPY docker/ax6000-stock-padavanonly/entrypoint.sh /workspace/docker/ax6000-stoc
 COPY immortalwrtARM/ /workspace/immortalwrtARM/
 
 RUN chmod +x /workspace/docker/ax6000-stock-padavanonly/entrypoint.sh \
-    /workspace/immortalwrtARM/ax6000/diy1.sh \
-    /workspace/immortalwrtARM/ax6000/diy2.sh
+    "/workspace/${DIY_P1_SH}" \
+    "/workspace/${DIY_P2_SH}"
 
 VOLUME ["/output", "/workdir"]
 

@@ -7,6 +7,7 @@ FEEDS_CONF="${FEEDS_CONF:-feeds.conf.default}"
 CONFIG_FILE="${CONFIG_FILE:-immortalwrtARM/ax6000/ax6000-stock-24.10-6.6.config}"
 DIY_P1_SH="${DIY_P1_SH:-immortalwrtARM/ax6000/diy1.sh}"
 DIY_P2_SH="${DIY_P2_SH:-immortalwrtARM/ax6000/diy2.sh}"
+DEFCONFIG_PATH="${DEFCONFIG_PATH:-defconfig/mt7986-ax6000.config}"
 TZ="${TZ:-Asia/Shanghai}"
 WORKSPACE="${WORKSPACE:-/workspace}"
 WORKDIR="${WORKDIR:-/workdir}"
@@ -95,9 +96,9 @@ if [ -n "${p2_path}" ]; then
   "${p2_path}"
 fi
 
-if [ -f defconfig/mt7986-ax6000.config ]; then
-  echo ">> Refreshing config with defconfig/mt7986-ax6000.config"
-  cp -f defconfig/mt7986-ax6000.config .config
+if [ -f "${DEFCONFIG_PATH}" ]; then
+  echo ">> Refreshing config with ${DEFCONFIG_PATH}"
+  cp -f "${DEFCONFIG_PATH}" .config
 fi
 
 echo ">> Generating defconfig and downloading sources"
@@ -106,6 +107,7 @@ make download -j"$(nproc)"
 find dl -size -1024c -delete
 
 echo ">> Building firmware"
+# Follow the same fallback pattern used in the GitHub Actions workflow
 if ! make -j"$(nproc)"; then
   echo ">> Parallel build failed, retrying single-thread"
   if ! make -j1; then
@@ -117,11 +119,11 @@ if ! make -j"$(nproc)"; then
   fi
 fi
 
-DEVICE_LINE="$(grep -E '^CONFIG_TARGET_.*_DEVICE_.*=y$' .config | head -n1 || true)"
+DEVICE_LINE="$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | head -n1 || true)"
 DEVICE_NAME=""
 if [ -n "${DEVICE_LINE}" ]; then
   # .config lines look like: CONFIG_TARGET_mediatek_filogic_DEVICE_redmi_ax6000=y
-  DEVICE_NAME="$(echo "${DEVICE_LINE}" | sed -E 's/^CONFIG_TARGET_.*_DEVICE_([^=]+)=y$/\1/' | tr -d '\n')"
+  DEVICE_NAME="$(echo "${DEVICE_LINE}" | sed -r 's/.*DEVICE_(.*)=y/\1/' | tr -d '\n')"
 fi
 FILE_DATE="$(date +"%Y%m%d%H%M")"
 
