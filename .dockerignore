@@ -1,0 +1,9 @@
+.git
+.github
+openwrt
+bin
+dl
+output
+tmp
+*.log
+packages_dump_tab_separated.txt
